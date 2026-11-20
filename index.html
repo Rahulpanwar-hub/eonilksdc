@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magnetic Effects of Current — Simple Virtual Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    input[type="range"] {
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+
+  <!-- HEADER -->
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
+    <div class="flex items-center gap-3">
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-2xl">🧲</div>
+      <div>
+        <h1 class="text-lg font-bold">Magnetic Effects of Current Lab</h1>
+        <p class="text-xs text-slate-500">Class 10 NCERT Physics — Solenoid &amp; Falling Magnet Tunnel</p>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button id="btnTab1" onclick="showTab('solenoid')" class="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white">
+        1. Solenoid
+      </button>
+      <button id="btnTab2" onclick="showTab('tunnel')" class="rounded-lg bg-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-700">
+        2. Falling Magnet Tunnel
+      </button>
+      <button onclick="resetAll()" class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold">
+        ↺ Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 1: SOLENOID                                                       -->
+  <!-- ===================================================================== -->
+  <div id="tabSolenoid" class="mx-auto max-w-6xl space-y-4 p-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <p class="mb-2 text-xs text-slate-500">Drag the compass around or inside the solenoid to see magnetic field direction.</p>
+      <canvas id="solCanvas" width="1050" height="320" class="w-full rounded-lg border border-slate-200 bg-white cursor-grab"></canvas>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <h2 class="font-bold text-sm">Controls</h2>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span>Current (I)</span>
+            <span id="lblI">5.0 A</span>
+          </div>
+          <input id="rngI" type="range" min="0" max="10" step="0.5" value="5" class="w-full" />
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span>Turns (N)</span>
+            <span id="lblN">12</span>
+          </div>
+          <input id="rngN" type="range" min="4" max="20" step="2" value="12" class="w-full" />
+        </div>
+        <button onclick="flipSolenoid()" class="w-full rounded-lg bg-slate-800 py-2 text-xs font-bold text-white">
+          ⇄ Reverse Current (+ / −)
+        </button>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs">
+        <h2 class="font-bold text-sm">Poles &amp; Field</h2>
+        <p>Left Pole: <strong id="txtLeftPole" class="text-blue-600">SOUTH</strong></p>
+        <p>Right Pole: <strong id="txtRightPole" class="text-red-600">NORTH</strong></p>
+        <p>Field (B): <strong id="txtB" class="text-emerald-600">0.38 mT</strong></p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs font-mono">
+        <h2 class="font-bold text-sm font-sans">Formula</h2>
+        <p>B = μ₀ · (N / L) · I</p>
+        <p id="txtSolFormula" class="text-slate-600">L = 0.20 m</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 2: FALLING MAGNET THROUGH COIL TUNNEL                             -->
+  <!-- ===================================================================== -->
+  <div id="tabTunnel" class="hidden mx-auto max-w-6xl space-y-4 p-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex gap-2">
+          <button onclick="dropMagnet()" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">
+            ⬇ Drop Magnet From Top
+          </button>
+          <button onclick="flipDropMagnet()" class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold">
+            ⇄ Flip Magnet (N / S)
+          </button>
+        </div>
+        <span id="txtTunnelStatus" class="text-xs font-semibold text-slate-600">
+          Click "Drop Magnet From Top" to pass through the coil tunnel
+        </span>
+      </div>
+
+      <canvas id="tunnelCanvas" width="1050" height="360" class="w-full rounded-lg border border-slate-200 bg-white"></canvas>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+        <h2 class="font-bold text-sm">Tunnel Settings</h2>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span>Coil Turns (N)</span>
+            <span id="lblTunTurns">8</span>
+          </div>
+          <input id="rngTunTurns" type="range" min="3" max="14" step="1" value="8" class="w-full" />
+        </div>
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span>Drop Height</span>
+            <span id="lblDropH">High</span>
+          </div>
+          <input id="rngDropH" type="range" min="40" max="130" step="10" value="100" class="w-full" />
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs">
+        <h2 class="font-bold text-sm">Induced Readings</h2>
+        <p>Induced EMF (ε): <strong id="txtEmf" class="text-amber-600 text-base">0.00 V</strong></p>
+        <p>Magnet Speed: <strong id="txtFallSpeed">0.00 m/s</strong></p>
+        <p>Current Direction: <strong id="txtIndDir">None (0 A)</strong></p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <h2 class="font-bold text-sm mb-2">EMF vs Time</h2>
+        <canvas id="emfMiniGraph" width="320" height="120" class="w-full rounded border border-slate-200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tab) {
+      const t1 = document.getElementById("tabSolenoid");
+      const t2 = document.getElementById("tabTunnel");
+      const b1 = document.getElementById("btnTab1");
+      const b2 = document.getElementById("btnTab2");
+
+      if (tab === "solenoid") {
+        t1.classList.remove("hidden");
+        t2.classList.add("hidden");
+        b1.className = "rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white";
+        b2.className = "rounded-lg bg-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-700";
+      } else {
+        t2.classList.remove("hidden");
+        t1.classList.add("hidden");
+        b2.className = "rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white";
+        b1.className = "rounded-lg bg-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-700";
+      }
+    }
+
+    // ---------------- TAB 1: SOLENOID ----------------
+    const solCanvas = document.getElementById("solCanvas");
+    const sCtx = solCanvas.getContext("2d");
+
+    const sol = {
+      current: 5,
+      turns: 12,
+      dir: 1,
+      compX: 525,
+      compY: 75,
+      dragging: false
+    };
+
+    document.getElementById("rngI").addEventListener("input", (e) => {
+      sol.current = parseFloat(e.target.value);
+      updateSolText();
+    });
+    document.getElementById("rngN").addEventListener("input", (e) => {
+      sol.turns = parseInt(e.target.value, 10);
+      updateSolText();
+    });
+
+    function flipSolenoid() {
+      sol.dir *= -1;
+      updateSolText();
+    }
+
+    function updateSolText() {
+      document.getElementById("lblI").textContent = `${sol.current.toFixed(1)} A`;
+      document.getElementById("lblN").textContent = `${sol.turns}`;
+      const bMt = (4 * Math.PI * 1e-7) * (sol.turns / 0.2) * sol.current * 1000;
+      document.getElementById("txtB").textContent = `${bMt.toFixed(2)} mT`;
+      document.getElementById("txtSolFormula").textContent = `B = 4π×10⁻⁷ × (${sol.turns}/0.20) × ${sol.current.toFixed(1)}`;
+
+      const lp = document.getElementById("txtLeftPole");
+      const rp = document.getElementById("txtRightPole");
+      if (sol.current === 0) {
+        lp.textContent = "NONE"; rp.textContent = "NONE";
+      } else if (sol.dir === 1) {
+        lp.textContent = "SOUTH"; lp.className = "text-blue-600";
+        rp.textContent = "NORTH"; rp.className = "text-red-600";
+      } else {
+        lp.textContent = "NORTH"; lp.className = "text-red-600";
+        rp.textContent = "SOUTH"; rp.className = "text-blue-600";
+      }
+    }
+
+    solCanvas.addEventListener("pointerdown", (e) => {
+      const r = solCanvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (solCanvas.width / r.width);
+      const y = (e.clientY - r.top) * (solCanvas.height / r.height);
+      if (Math.hypot(x - sol.compX, y - sol.compY) < 35) sol.dragging = true;
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!sol.dragging) return;
+      const r = solCanvas.getBoundingClientRect();
+      sol.compX = Math.max(40, Math.min(1010, (e.clientX - r.left) * (solCanvas.width / r.width)));
+      sol.compY = Math.max(40, Math.min(280, (e.clientY - r.top) * (solCanvas.height / r.height)));
+    });
+    window.addEventListener("pointerup", () => (sol.dragging = false));
+
+    function drawSolenoid() {
+      sCtx.clearRect(0, 0, solCanvas.width, solCanvas.height);
+      const cx = 525, cy = 165, w = 320, h = 74;
+      const lx = cx - w / 2, rx = cx + w / 2;
+
+      // Field lines
+      if (sol.current > 0) {
+        sCtx.strokeStyle = "#10b981";
+        sCtx.lineWidth = 1.8;
+        [-20, 0, 20].forEach((off) => {
+          sCtx.beginPath();
+          sCtx.moveTo(lx - 20, cy + off);
+          sCtx.lineTo(rx + 20, cy + off);
+          sCtx.stroke();
+        });
+      }
+
+      // Coil turns
+      const step = w / sol.turns;
+      sCtx.strokeStyle = "#ea580c";
+      sCtx.lineWidth = 4;
+      for (let i = 0; i < sol.turns; i++) {
+        const x = lx + i * step;
+        sCtx.beginPath();
+        sCtx.moveTo(x, cy + h / 2);
+        sCtx.lineTo(x + step * 0.5, cy - h / 2);
+        sCtx.stroke();
+      }
+
+      // Compass
+      const dx = sol.compX - (cx + sol.dir * (w / 2));
+      const dy = sol.compY - cy;
+      const ang = sol.current === 0 ? -Math.PI / 2 : Math.atan2(dy, dx);
+
+      sCtx.save();
+      sCtx.translate(sol.compX, sol.compY);
+      sCtx.fillStyle = "#fff"; sCtx.strokeStyle = "#334155"; sCtx.lineWidth = 2.5;
+      sCtx.beginPath(); sCtx.arc(0, 0, 22, 0, Math.PI * 2); sCtx.fill(); sCtx.stroke();
+      sCtx.rotate(ang);
+      sCtx.fillStyle = "#dc2626";
+      sCtx.beginPath(); sCtx.moveTo(16, 0); sCtx.lineTo(0, -4); sCtx.lineTo(0, 4); sCtx.fill();
+      sCtx.fillStyle = "#2563eb";
+      sCtx.beginPath(); sCtx.moveTo(-16, 0); sCtx.lineTo(0, -4); sCtx.lineTo(0, 4); sCtx.fill();
+      sCtx.restore();
+    }
+
+    // ---------------- TAB 2: FALLING MAGNET THROUGH TUNNEL ----------------
+    const tunCanvas = document.getElementById("tunnelCanvas");
+    const tCtx = tunCanvas.getContext("2d");
+    const miniCanvas = document.getElementById("emfMiniGraph");
+    const mCtx = miniCanvas.getContext("2d");
+
+    const tun = {
+      tunnelX: 430,
+      tunnelTopY: 165,
+      tunnelH: 90,
+      tunnelW: 110,
+      magnetY: 50,
+      prevY: 50,
+      vy: 0,
+      falling: false,
+      northTop: true,
+      turns: 8,
+      dropStartY: 50,
+      emf: 0,
+      hist: new Array(90).fill(0)
+    };
+
+    document.getElementById("rngTunTurns").addEventListener("input", (e) => {
+      tun.turns = parseInt(e.target.value, 10);
+      document.getElementById("lblTunTurns").textContent = tun.turns;
+    });
+
+    document.getElementById("rngDropH").addEventListener("input", (e) => {
+      const val = parseInt(e.target.value, 10);
+      tun.dropStartY = 140 - val;
+      document.getElementById("lblDropH").textContent = val >= 100 ? "High" : val >= 70 ? "Medium" : "Low";
+      if (!tun.falling) {
+        tun.magnetY = tun.dropStartY;
+        tun.prevY = tun.dropStartY;
+      }
+    });
+
+    function dropMagnet() {
+      tun.magnetY = tun.dropStartY;
+      tun.prevY = tun.dropStartY;
+      tun.vy = 1.5;
+      tun.falling = true;
+      document.getElementById("txtTunnelStatus").textContent = "Magnet falling through tunnel...";
+    }
+
+    function flipDropMagnet() {
+      tun.northTop = !tun.northTop;
+    }
+
+    function stepTunnel(dt) {
+      if (tun.falling) {
+        tun.vy += 260 * dt; // visual gravity px/s^2
+        tun.magnetY += tun.vy * dt;
+
+        // Stop at bottom tray
+        if (tun.magnetY >= 315) {
+          tun.magnetY = 315;
+          tun.falling = false;
+          tun.vy = 0;
+          document.getElementById("txtTunnelStatus").textContent = "Magnet reached bottom! Click 'Drop Magnet From Top' again.";
+        }
+      }
+
+      const dy = tun.magnetY - tun.prevY;
+      tun.prevY = tun.magnetY;
+
+      const coilMidY = tun.tunnelTopY + tun.tunnelH / 2;
+      const dist = (tun.magnetY - coilMidY) / 55;
+      const flux = (tun.northTop ? 1 : -1) * Math.exp(-dist * dist);
+      const dFluxDy = (-2 * dist * flux) / 55;
+
+      const rawEmf = -tun.turns * dFluxDy * (dy / Math.max(dt, 0.01)) * 0.04;
+      tun.emf = tun.emf * 0.65 + rawEmf * 0.35;
+      if (Math.abs(tun.emf) < 0.03) tun.emf = 0;
+
+      tun.hist.push(tun.emf);
+      tun.hist.shift();
+
+      document.getElementById("txtEmf").textContent = `${tun.emf.toFixed(2)} V`;
+      document.getElementById("txtFallSpeed").textContent = `${(tun.vy / 45).toFixed(2)} m/s`;
+      document.getElementById("txtIndDir").textContent =
+        Math.abs(tun.emf) < 0.05 ? "None (0 A)" : tun.emf > 0 ? "Clockwise / Right →" : "Anti-clockwise / Left ←";
+    }
+
+    function drawTunnel() {
+      tCtx.clearRect(0, 0, tunCanvas.width, tunCanvas.height);
+
+      const tx = tun.tunnelX;
+      const ty = tun.tunnelTopY;
+      const tw = tun.tunnelW;
+      const th = tun.tunnelH;
+
+      // Vertical tunnel guide line
+      tCtx.strokeStyle = "#cbd5e1";
+      tCtx.setLineDash([5, 5]);
+      tCtx.beginPath();
+      tCtx.moveTo(tx + tw / 2, 20);
+      tCtx.lineTo(tx + tw / 2, 335);
+      tCtx.stroke();
+      tCtx.setLineDash([]);
+
+      // Tunnel cylinder
+      tCtx.fillStyle = "#f1f5f9";
+      tCtx.strokeStyle = "#64748b";
+      tCtx.lineWidth = 2;
+      tCtx.fillRect(tx, ty, tw, th);
+      tCtx.strokeRect(tx, ty, tw, th);
+
+      // Falling Magnet
+      const mx = tx + tw / 2 - 22;
+      const my = tun.magnetY;
+      tCtx.fillStyle = tun.northTop ? "#dc2626" : "#2563eb";
+      tCtx.fillRect(mx, my, 44, 18);
+      tCtx.fillStyle = tun.northTop ? "#2563eb" : "#dc2626";
+      tCtx.fillRect(mx, my + 18, 44, 18);
+      tCtx.strokeStyle = "#0f172a";
+      tCtx.strokeRect(mx, my, 44, 36);
+
+      tCtx.fillStyle = "#fff";
+      tCtx.font = "bold 11px sans-serif";
+      tCtx.textAlign = "center";
+      tCtx.fillText(tun.northTop ? "N" : "S", mx + 22, my + 13);
+      tCtx.fillText(tun.northTop ? "S" : "N", mx + 22, my + 31);
+
+      // Coil windings wrapped around tunnel
+      const rowGap = th / tun.turns;
+      tCtx.strokeStyle = "#ea580c";
+      tCtx.lineWidth = 3.5;
+      for (let i = 0; i < tun.turns; i++) {
+        const wy = ty + (i + 0.5) * rowGap;
+        tCtx.beginPath();
+        tCtx.moveTo(tx - 8, wy);
+        tCtx.lineTo(tx + tw + 8, wy);
+        tCtx.stroke();
+      }
+
+      // Galvanometer box on right
+      const gx = 780, gy = 210;
+      tCtx.strokeStyle = "#334155";
+      tCtx.lineWidth = 2.5;
+      tCtx.beginPath();
+      tCtx.moveTo(tx + tw + 8, ty + 15);
+      tCtx.lineTo(gx - 40, ty + 15);
+      tCtx.lineTo(gx - 40, gy);
+      tCtx.moveTo(tx + tw + 8, ty + th - 15);
+      tCtx.lineTo(gx + 40, ty + th - 15);
+      tCtx.lineTo(gx + 40, gy);
+      tCtx.stroke();
+
+      tCtx.fillStyle = "#fff";
+      tCtx.beginPath();
+      tCtx.arc(gx, gy, 42, 0, Math.PI * 2);
+      tCtx.fill();
+      tCtx.stroke();
+
+      const ang = -Math.PI / 2 + Math.max(-1, Math.min(1, tun.emf / 4)) * (Math.PI / 3);
+      tCtx.save();
+      tCtx.translate(gx, gy + 6);
+      tCtx.rotate(ang);
+      tCtx.strokeStyle = "#dc2626";
+      tCtx.lineWidth = 3;
+      tCtx.beginPath(); tCtx.moveTo(0, 0); tCtx.lineTo(32, 0); tCtx.stroke();
+      tCtx.restore();
+
+      tCtx.fillStyle = "#0f172a";
+      tCtx.font = "bold 11px sans-serif";
+      tCtx.fillText(`EMF: ${tun.emf.toFixed(2)} V`, gx, gy + 58);
+
+      // Mini Graph
+      mCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+      const midY = miniCanvas.height / 2;
+      mCtx.strokeStyle = "#cbd5e1";
+      mCtx.beginPath(); mCtx.moveTo(0, midY); mCtx.lineTo(miniCanvas.width, midY); mCtx.stroke();
+
+      mCtx.strokeStyle = "#d97706";
+      mCtx.lineWidth = 2;
+      mCtx.beginPath();
+      tun.hist.forEach((v, idx) => {
+        const x = (idx / (tun.hist.length - 1)) * miniCanvas.width;
+        const y = midY - Math.max(-1, Math.min(1, v / 4)) * (midY - 10);
+        if (idx === 0) mCtx.moveTo(x, y); else mCtx.lineTo(x, y);
+      });
+      mCtx.stroke();
+    }
+
+    function resetAll() {
+      sol.current = 5; sol.turns = 12; sol.dir = 1; sol.compX = 525; sol.compY = 75;
+      document.getElementById("rngI").value = 5; document.getElementById("rngN").value = 12;
+      updateSolText();
+
+      tun.falling = false; tun.vy = 0; tun.magnetY = tun.dropStartY; tun.prevY = tun.dropStartY; tun.emf = 0;
+      tun.hist.fill(0);
+      document.getElementById("txtTunnelStatus").textContent = "Click 'Drop Magnet From Top' to pass through the coil tunnel";
+    }
+
+    updateSolText();
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      drawSolenoid();
+      stepTunnel(dt);
+      drawTunnel();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
